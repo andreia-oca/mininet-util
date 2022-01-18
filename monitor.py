@@ -11,7 +11,7 @@ def monitor_qlen(iface, interval_sec = 0.01, fname='%s/qlen.txt' % default_dir):
     open(fname, 'w').write('')
     while 1:
         p = Popen(cmd, shell=True, stdout=PIPE)
-        output = p.stdout.read()
+        output = p.stdout.read().decode('utf-8')
         # Not quite right, but will do for now
         matches = pat_queued.findall(output)
         if matches and len(matches) > 1:
