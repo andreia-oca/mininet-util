@@ -20,14 +20,14 @@ parser.add_argument('--files', '-f',
 
 parser.add_argument('--maxy',
                     help="Max mbps on y-axis..",
-		    type=int,
-                    default=1000,
+            type=int,
+                    default=200,
                     action="store",
                     dest="maxy")
 
 parser.add_argument('--miny',
                     help="Min mbps on y-axis..",
-		    type=int,
+                    type=int,
                     default=0,
                     action="store",
                     dest="miny")
@@ -43,12 +43,6 @@ parser.add_argument('--out', '-o',
                     help="Output png file for the plot.",
                     default=None, # Will show the plot
                     dest="out")
-
-parser.add_argument('-s', '--summarise',
-                    help="Summarise the time series plot (boxplot).  First 10 and last 10 values are ignored.",
-                    default=False,
-                    dest="summarise",
-                    action="store_true")
 
 parser.add_argument('--cdf',
                     help="Plot CDF of queue timeseries (first 10 and last 10 values are ignored)",
@@ -81,8 +75,10 @@ to_plot=[]
 def get_style(i):
     if i == 0:
         return {'color': 'red'}
-    else:
+    if i == 1:
         return {'color': 'black', 'ls': '-.'}
+    else:
+        return {'color': 'orange'}
 
 print args.files
 fig = figure()
@@ -94,7 +90,7 @@ for i, f in enumerate(args.files):
     xaxis = map(lambda x: x - start_time, xaxis)
     qlens = map(float, col(1, data))
 
-    if args.summarise or args.cdf:
+    if args.cdf:
         to_plot.append(qlens[10:-10])
     else:
         xaxis = xaxis[::args.every]
@@ -104,56 +100,33 @@ for i, f in enumerate(args.files):
     ax.xaxis.set_major_locator(MaxNLocator(4))
 
 
-
-
-
-#plt.title("Queue sizes")
-plt.title("")
-plt.ylabel("Packets")
+plt.title("Queue Occupancy", fontsize=24)
+plt.ylabel("Queue size", fontsize=16)
 plt.grid(True)
-#yaxis = range(0, 1101, 50)
-#ylabels = map(lambda y: str(y) if y%100==0 else '', yaxis)
-#plt.yticks(yaxis, ylabels)
-#plt.ylim((0,1100))
 plt.ylim((args.miny,args.maxy))
 
-if args.summarise:
-    plt.xlabel("Link Rates")
-    plt.boxplot(to_plot)
-    xaxis = range(1, 1+len(args.files))
-    plt.xticks(xaxis, args.labels)
-    for x in xaxis:
-        y = pc99(to_plot[x-1])
-        print x, y
-        if x == 1:
-            s = '99pc: %d' % y
-            offset = (-20,20)
-        else:
-            s = str(y)
-            offset = (-10, 20)
-        plt.annotate(s, (x,y+1), xycoords='data',
-                xytext=offset, textcoords='offset points',
-                arrowprops=dict(arrowstyle="->"))
-elif args.cdf:
+if args.cdf:
     fig = figure()
     ax = fig.add_subplot(111)
     for i,data in enumerate(to_plot):
         xs, ys = cdf(map(int, data))
         ax.plot(xs, ys, label=args.legend[i], lw=2, **get_style(i))
-        plt.ylabel("Fraction")
-        plt.xlabel("Packets")
+        # plt.ylabel("Fraction")
+        plt.xlabel("Packets", fontsize=16)
         plt.ylim((0, 1.0))
-        plt.legend(args.legend, loc="upper left")
-        plt.title("")
+        plt.legend(args.legend, bbox_to_anchor=(1.05, 1))
+        # plt.legend(args.legend, loc="upper left")
+        plt.title("Queue Occupancy CDF", fontsize=24)
         ax.xaxis.set_major_locator(MaxNLocator(4))
 else:
-    plt.xlabel("Seconds")
+    plt.xlabel("Seconds", fontsize=16)
     if args.legend:
-        plt.legend(args.legend, loc="upper left")
+        plt.legend(args.legend, bbox_to_anchor=(1.05, 1))
+        # plt.legend(args.legend, loc="upper left")
     else:
         plt.legend(args.files)
 
 if args.out:
-    plt.savefig(args.out)
+    plt.savefig(args.out, bbox_inches="tight")
 else:
     plt.show()
